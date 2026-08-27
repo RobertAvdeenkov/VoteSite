@@ -5,3 +5,4 @@ asyncpg
 bcrypt
 python-jose[cryptography]==3.3.0
 aiosqlite
+psycopg2
