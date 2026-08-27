@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Голосования</title>
+    <style>
+
+        text{
+            color: #ffcc00;
+        }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 0 15px;
+            background: #0d0d0d;
+            color: #e0e0e0;
+        }
+        h1, h2 {
+            color: #ffcc00;
+        }
+        .poll {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 16px;
+            margin-bottom: 16px;
+            border-radius: 8px;
+        }
+        .poll h3 {
+            margin-top: 0;
+            color: #ffcc00;
+        }
+        .poll-options {
+            margin: 10px 0;
+        }
+        .poll-options label {
+            display: block;
+            padding: 6px 0;
+            cursor: pointer;
+        }
+        .poll-options label:hover {
+            background: #2a2a2a;
+        }
+        .vote-btn {
+            background: #ffcc00;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 8px;
+        }
+        .vote-btn:hover {
+            background: #e6b800;
+        }
+        .poll-results {
+            margin-top: 12px;
+            border-top: 1px solid #333;
+            padding-top: 12px;
+        }
+        .poll-results .bar {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 4px 0;
+        }
+        .poll-results .bar .fill {
+            height: 16px;
+            background: #ffcc00;
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+        .poll-results .bar .label {
+            min-width: 60px;
+            font-size: 14px;
+        }
+        .poll-results .bar .percent {
+            font-size: 14px;
+            color: #aaa;
+        }
+        .create-poll {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 16px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+        }
+        .create-poll input, .create-poll textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 6px 0;
+            background: #2a2a2a;
+            border: 1px solid #444;
+            color: #e0e0e0;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #ffcc00;
+            color: #000;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .create-poll button:hover {
+            background: #e6b800;
+        }
+        .flash {
+            padding: 10px;
+            margin-bottom: 16px;
+            border-radius: 6px;
+            display: none;
+        }
+        .flash.success {
+            background: #1e7e34;
+            color: #d4edda;
+            display: block;
+        }
+        .flash.error {
+            background: #7e1e1e;
+            color: #f8d7da;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <h1>Голосования</h1>
+
+    <div id="flash" class="flash"></div>
+
+    <!-- Форма создания опроса -->
+    <div class="create-poll" id="createPollForm">
+        <h2>Создать опрос</h2>
+        <input type="text" id="pollTitle" placeholder="Название опроса">
+        <textarea id="pollOptions" rows="3" placeholder="Варианты ответов (каждый с новой строки)"></textarea>
+        <button onclick="createPoll()">Создать опрос</button>
+    </div>
+
+    <!-- Список опросов -->
+    <div id="pollsList">
+        <h2>Активные опросы</h2>
+        <div id="pollsContainer">
+            <p>Загрузка...</p>
+        </div>
+    </div>
+
+    <script>
+        function showMessage(text, type = 'success') {
+            const el = document.getElementById('flash');
+            el.textContent = text;
+            el.className = 'flash ' + type;
+            setTimeout(() => { el.style.display = 'none'; }, 4000);
+        }
+
+        async function loadPolls() {
+            try {
+                    const response = await fetch('/loadpolls', {
+                        method: 'POST',
+                        headers: { 
+                            "Accept": "application/json", 
+                            "Content-Type": "application/json", 
+                        },
+                        body: JSON.stringify({})
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        
+                        // В message вставляем data.message
+                        const messageElement = document.getElementById("message");
+                        if (messageElement) {
+                            messageElement.textContent = data.message;
+                        }
+                        
+                        // В content вставляем полный блок
+                        const contentElement = document.getElementById('pollsContainer');
+                        if (contentElement && data.message) {
+                            contentElement.innerHTML = `
+                                ${data.message}
+                            `;
+                        }
+                    } else {
+                        const error = await response.json();
+                        alert(error.detail || 'Ошибка авторизации');
+                    }
+                } catch (e) {
+                    console.error('Ошибка:', e);
+                    alert('Произошла ошибка при выполнении запроса: ' + e.message);
+                    return e;
+                }
+            
+        }
+        
+
+        async function createPoll() {
+            const title = document.getElementById('pollTitle').value.trim();
+            const optionsText = document.getElementById('pollOptions').value.trim();
+            if (!title || !optionsText) {
+                showMessage('Заполните название и варианты', 'error');
+                return;
+            }
+            const options = optionsText.split('\n').map(s => s.trim()).filter(s => s);
+            if (options.length < 2) {
+                showMessage('Нужно минимум 2 варианта', 'error');
+                return;
+            }
+            try {
+                const response = await fetch('/polls', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 'title':title, 'options':options })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showMessage('Опрос создан!');
+                    document.getElementById('pollTitle').value = '';
+                    document.getElementById('pollOptions').value = '';
+                    loadPolls();
+                } else {
+                    showMessage(data.detail || 'Ошибка создания', 'error');
+                }
+            } catch (e) {
+                showMessage('Ошибка соединения', 'error');
+            }
+        }
+
+        async function vote(pollId, typeID) {
+            try {
+                const response = await fetch(`/voting`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({'pollID':pollId, 'typeID':typeID})
+                });
+                const data = await response.json();
+                if (response.ok || data['voted']==false) {
+                    loadPolls();
+                } else {
+                    showMessage('Ошибка голосования');
+                }
+            } catch (e) {
+                showMessage('Ошибка соединения', 'error');
+            }
+        }
+
+        loadPolls();
+    </script>
+</body>
+</html>
