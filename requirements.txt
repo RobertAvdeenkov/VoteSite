@@ -1,0 +1,7 @@
+fastapi
+uvicorn[standart]
+sqlalchemy
+asyncpg
+bcrypt
+jose[cryptography]
+aiosqlite
