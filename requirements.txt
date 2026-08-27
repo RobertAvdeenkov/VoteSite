@@ -3,5 +3,5 @@ uvicorn[standart]
 sqlalchemy
 asyncpg
 bcrypt
-jose[cryptography]
+python-jose[cryptography]==3.3.0
 aiosqlite
