@@ -6,8 +6,6 @@ from fastapi import HTTPException
 
 SECRET=os.getenv('SECRET', 'arv@h2so4')
 ALGORITHM=os.getenv('ALGORITHM', 'HS256')
-print(SECRET,ALGORITHM)
-
 oauth=OAuth2PasswordBearer(tokenUrl='reglog')
 
 def create_token(user:str):
@@ -15,11 +13,11 @@ def create_token(user:str):
         'sub':user,
         'exp':datetime.now()+timedelta(hours=1)
     }
-    return jwt.encode(payload,SECRET,ALGORITHM) #type:ignore
+    return jwt.encode(payload,SECRET,ALGORITHM)
 
 def get_by_token(token:str):
     try:
-        data=jwt.decode(token,SECRET,algorithms=[ALGORITHM]) #type:ignore
+        data=jwt.decode(token,SECRET,algorithms=[ALGORITHM]) 
         return data['sub']
     except:
         raise HTTPException(401, 'Вы не зарегистрированы или проблема с токеном')
